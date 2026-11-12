@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقيت الفجر والغروب - مملكة البحرين</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .star { animation: twinkle 3s ease-in-out infinite; }
+        @keyframes twinkle { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+        input[type=range] { accent-color: #fbbf24; }
+        .chip { background: #0f172a; border: 1px solid #475569; }
+        .chip:hover { border-color: #fbbf24; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+<div class="bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden">
+
+    <!-- السماء -->
+    <div id="sky" class="relative h-56">
+        <svg viewBox="0 0 400 220" class="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMax slice">
+            <g id="stars"></g>
+            <circle id="sunGlow" cx="200" cy="200" r="60" fill="#ffb347" opacity="0"/>
+            <circle id="sun" cx="200" cy="210" r="22" fill="#ffd27a"/>
+            <!-- الأفق: مسجد ونخيل -->
+            <path d="M0 220 V178 H70 V170 Q85 148 100 170 V178 H112 V120 L116 112 L120 120 V178 H150 V176
+                     Q175 140 200 176 V178 H230 V178 H400 V220 Z" fill="#0b1220"/>
+            <path d="M300 178 V140 M300 142 Q285 136 276 146 M300 142 Q315 134 326 144 M300 146 Q290 150 282 160 M300 146 Q312 150 320 160"
+                  stroke="#0b1220" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="absolute top-3 inset-x-0 text-center">
+            <h1 class="text-xl font-bold text-amber-300 drop-shadow">مواقيت الفجر والغروب</h1>
+            <p class="text-xs text-slate-200/80">المنامة، مملكة البحرين</p>
+        </div>
+        <div id="phase" class="absolute bottom-2 right-3 text-xs bg-black/40 rounded-full px-3 py-1">--</div>
+        <div id="scrubTime" class="absolute bottom-2 left-3 text-xs bg-black/40 rounded-full px-3 py-1" dir="rtl">--:--</div>
+    </div>
+
+    <div class="p-5 md:p-6">
+
+        <!-- الشريط: اليوم كاملاً -->
+        <div class="mb-5">
+            <input id="scrub" type="range" dir="ltr" min="0" max="1439" step="1" value="0" class="w-full">
+            <div id="ticks" dir="ltr" class="relative h-3 mx-[7px]"></div>
+            <div dir="ltr" class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+                <span>12ص</span><span>6ص</span><span>12م</span><span>6م</span><span>12ص</span>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                <button id="liveBtn" class="px-3 py-1 rounded-full bg-amber-400 text-slate-900 font-semibold">الآن</button>
+                <button data-jump="fajr" class="chip px-3 py-1 rounded-full">الفجر</button>
+                <button data-jump="sunrise" class="chip px-3 py-1 rounded-full">الشروق</button>
+                <button data-jump="noon" class="chip px-3 py-1 rounded-full">الظهر</button>
+                <button data-jump="sunset" class="chip px-3 py-1 rounded-full">الغروب</button>
+                <button data-jump="isha" class="chip px-3 py-1 rounded-full">العشاء</button>
+            </div>
+        </div>
+
+        <!-- التاريخ -->
+        <div class="mb-4 flex items-center gap-2">
+            <button id="prevDay" class="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg hover:border-amber-400">→</button>
+            <input type="date" id="datePicker"
+                class="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+            <button id="nextDay" class="px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg hover:border-amber-400">←</button>
+        </div>
+
+        <!-- العد التنازلي -->
+        <div class="mb-4 text-center bg-slate-900/70 border border-slate-700/40 rounded-xl p-3">
+            <div id="nextLabel" class="text-xs text-slate-400">--</div>
+            <div id="countdown" class="text-2xl font-bold text-amber-300 tabular-nums" dir="ltr">--:--:--</div>
+        </div>
+
+        <!-- الصباح -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">أذان الفجر</span>
+                    <span class="text-xs text-slate-500">الشمس 18° تحت الأفق</span>
+                </div>
+                <span id="fajrTime" class="text-xl font-bold text-blue-400">--:--</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">الإسفار (انتشار النور)</span>
+                    <span class="text-xs text-slate-500">من تقريبي إلى الوقت الدقيق</span>
+                </div>
+                <span id="nurTime" class="text-lg font-bold text-amber-300">--:--</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">شروق الشمس</span>
+                    <span class="text-xs text-slate-500">ظهور حافة القرص</span>
+                </div>
+                <span id="sunriseTime" class="text-xl font-bold text-orange-400">--:--</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">بداية وقت الضحى</span>
+                    <span class="text-xs text-slate-500">بعد الشروق بـ 15 دقيقة تقريباً</span>
+                </div>
+                <span id="duhaTime" class="text-xl font-bold text-yellow-300">--:--</span>
+            </div>
+        </div>
+
+        <!-- المساء -->
+        <div class="space-y-3 mt-3">
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">غروب الشمس</span>
+                    <span class="text-xs text-slate-500">اختفاء حافة القرص</span>
+                </div>
+                <span id="sunsetTime" class="text-xl font-bold text-orange-400">--:--</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">نهاية النور بعد الغروب</span>
+                    <span class="text-xs text-slate-500">من الوقت الدقيق إلى تقريبي</span>
+                </div>
+                <span id="duskTime" class="text-lg font-bold text-amber-300">--:--</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-900/70 rounded-xl border border-slate-700/40">
+                <div>
+                    <span class="block text-sm text-slate-400">أذان العشاء</span>
+                    <span class="text-xs text-slate-500">الشمس 18° تحت الأفق</span>
+                </div>
+                <span id="ishaTime" class="text-xl font-bold text-blue-400">--:--</span>
+            </div>
+        </div>
+
+        <p class="mt-5 text-center text-[11px] text-slate-500 leading-relaxed">
+            حسابات فلكية (NOAA) لإحداثيات المنامة، وقد تختلف دقيقة أو دقيقتين عن التقويم الرسمي.
+            للصلاة اعتمد تقويم إدارة الأوقاف.
+        </p>
+    </div>
+</div>
+
+<script>
+    // ===== الإعدادات =====
+    const LAT = 26.2285, LNG = 50.5860, TZ = 3;   // المنامة، UTC+3
+    const FAJR_ANGLE = 18;                         // زاوية الفجر
+    const ISHA_ANGLE = 18;                         // زاوية العشاء
+    const NUR_START_ANGLE = 7;                     // الإسفار: التقريبي
+    const NUR_END_ANGLE = 6;                       // الإسفار: الدقيق
+    const SUNRISE_ANGLE = 0.833;                   // انكسار الضوء + نصف قطر القرص
+    const DUHA_OFFSET = 15;                        // دقائق بعد الشروق
+
+    const rad = Math.PI / 180, deg = 180 / Math.PI;
+    const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+    // ===== الحساب الفلكي (NOAA) =====
+    function sunParams(jd) {
+        const T = (jd - 2451545) / 36525;
+        const L0 = (280.46646 + T * (36000.76983 + T * 0.0003032)) % 360;
+        const M = 357.52911 + T * (35999.05029 - 0.0001537 * T);
+        const e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+        const C = Math.sin(M * rad) * (1.914602 - T * (0.004817 + 0.000014 * T))
+                + Math.sin(2 * M * rad) * (0.019993 - 0.000101 * T)
+                + Math.sin(3 * M * rad) * 0.000289;
+        const trueLong = L0 + C;
+        const omega = 125.04 - 1934.136 * T;
+        const lambda = trueLong - 0.00569 - 0.00478 * Math.sin(omega * rad);
+        const eps0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60;
+        const eps = eps0 + 0.00256 * Math.cos(omega * rad);
+        const decl = Math.asin(Math.sin(eps * rad) * Math.sin(lambda * rad)) * deg;
+        const y = Math.tan(eps * rad / 2) ** 2;
+        const eq = 4 * deg * (y * Math.sin(2 * L0 * rad)
+                 - 2 * e * Math.sin(M * rad)
+                 + 4 * e * y * Math.sin(M * rad) * Math.cos(2 * L0 * rad)
+                 - 0.5 * y * y * Math.sin(4 * L0 * rad)
+                 - 1.25 * e * e * Math.sin(2 * M * rad));
+        return { decl, eq };
+    }
+
+    // sign = -1 صباحاً (قبل الظهر)، +1 مساءً (بعد الظهر)
+    // يرجع الوقت المحلي بالدقائق منذ منتصف الليل
+    function solarEvent(jd0, angle, sign) {
+        let t = (sign < 0 ? 360 : 1080) - 4 * LNG;
+        for (let i = 0; i < 4; i++) {
+            const p = sunParams(jd0 + t / 1440);
+            const noon = 720 - 4 * LNG - p.eq;
+            const cosH = (Math.sin(-angle * rad) - Math.sin(LAT * rad) * Math.sin(p.decl * rad))
+                       / (Math.cos(LAT * rad) * Math.cos(p.decl * rad));
+            const H = Math.acos(clamp(cosH, -1, 1)) * deg;
+            t = noon + sign * 4 * H;
+        }
+        return t + TZ * 60;
+    }
+
+    // ارتفاع الشمس وزاويتها الساعية في أي دقيقة محلية من اليوم
+    function sunAt(jd0, tmin) {
+        const p = sunParams(jd0 + (tmin - TZ * 60) / 1440);
+        const noon = 720 - 4 * LNG - p.eq + TZ * 60;
+        const H = (tmin - noon) / 4;
+        const alt = Math.asin(Math.sin(LAT * rad) * Math.sin(p.decl * rad)
+                  + Math.cos(LAT * rad) * Math.cos(p.decl * rad) * Math.cos(H * rad)) * deg;
+        return { alt, H };
+    }
+
+    function computeDay(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const jd0 = Date.UTC(y, m - 1, d) / 864e5 + 2440587.5;
+        const sunrise = solarEvent(jd0, SUNRISE_ANGLE, -1);
+        const sunset = solarEvent(jd0, SUNRISE_ANGLE, 1);
+        return {
+            jd0,
+            fajr: solarEvent(jd0, FAJR_ANGLE, -1),
+            nurStart: solarEvent(jd0, NUR_START_ANGLE, -1),
+            nurEnd: solarEvent(jd0, NUR_END_ANGLE, -1),
+            sunrise,
+            duha: sunrise + DUHA_OFFSET,
+            noon: (sunrise + sunset) / 2,
+            sunset,
+            duskStart: solarEvent(jd0, NUR_END_ANGLE, 1),
+            duskEnd: solarEvent(jd0, NUR_START_ANGLE, 1),
+            isha: solarEvent(jd0, ISHA_ANGLE, 1)
+        };
+    }
+
+    // ===== أدوات =====
+    function fmt(min, withPeriod = true) {
+        const total = Math.round(min) % 1440;
+        const h = Math.floor(total / 60), m = total % 60;
+        const period = h >= 12 ? 'م' : 'ص';
+        const dh = h % 12 === 0 ? 12 : h % 12;
+        const base = `${dh}:${String(m).padStart(2, '0')}`;
+        return withPeriod ? `${base} ${period}` : base;
+    }
+    function fmtRange(a, b) {
+        const samePeriod = (Math.floor(Math.round(a) / 60) >= 12) === (Math.floor(Math.round(b) / 60) >= 12);
+        return `${fmt(a, !samePeriod)} - ${fmt(b, true)}`;
+    }
+    function bahrainNow() {
+        const s = new Date(Date.now() + TZ * 3600e3);
+        return {
+            date: s.toISOString().slice(0, 10),
+            min: s.getUTCHours() * 60 + s.getUTCMinutes() + s.getUTCSeconds() / 60
+        };
+    }
+    function shiftDate(dateStr, days) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+    }
+    const pad = n => String(n).padStart(2, '0');
+
+    // ===== السماء (حسب ارتفاع الشمس) =====
+    const skyStops = [
+        { a: -18, top: [8, 12, 32],    bot: [17, 26, 61] },
+        { a: -12, top: [14, 20, 56],   bot: [40, 40, 100] },
+        { a: -6,  top: [40, 50, 120],  bot: [150, 90, 130] },
+        { a: 0,   top: [70, 90, 160],  bot: [245, 140, 90] },
+        { a: 10,  top: [90, 140, 210], bot: [255, 200, 120] },
+        { a: 35,  top: [60, 125, 220], bot: [150, 200, 245] }
+    ];
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function mix(c1, c2, t) { return c1.map((v, i) => Math.round(lerp(v, c2[i], t))); }
+    function skyColors(alt) {
+        const f = skyStops[0], l = skyStops[skyStops.length - 1];
+        if (alt <= f.a) return [f.top, f.bot];
+        if (alt >= l.a) return [l.top, l.bot];
+        for (let i = 0; i < skyStops.length - 1; i++) {
+            const a = skyStops[i], b = skyStops[i + 1];
+            if (alt <= b.a) {
+                const t = (alt - a.a) / (b.a - a.a);
+                return [mix(a.top, b.top, t), mix(a.bot, b.bot, t)];
+            }
+        }
+    }
+
+    const sky = document.getElementById('sky');
+    const sun = document.getElementById('sun');
+    const sunGlow = document.getElementById('sunGlow');
+    const starsG = document.getElementById('stars');
+
+    for (let i = 0; i < 45; i++) {
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', Math.random() * 400);
+        c.setAttribute('cy', Math.random() * 130);
+        c.setAttribute('r', (Math.random() * 1.2 + 0.4).toFixed(2));
+        c.setAttribute('fill', '#fff');
+        c.setAttribute('class', 'star');
+        c.style.animationDelay = (Math.random() * 3).toFixed(2) + 's';
+        starsG.appendChild(c);
+    }
+
+    function setSky(tmin) {
+        const { alt, H } = sunAt(day.jd0, tmin);
+        const [top, bot] = skyColors(alt);
+        sky.style.background = `linear-gradient(to bottom, rgb(${top}), rgb(${bot}))`;
+        starsG.style.opacity = clamp((-alt - 2) / 8, 0, 1);
+        const x = 200 + clamp(H, -110, 110) * 1.45;
+        const y = clamp(178 - alt * 2.4, 50, 270);
+        sun.setAttribute('cx', x); sun.setAttribute('cy', y);
+        sunGlow.setAttribute('cx', x); sunGlow.setAttribute('cy', y);
+        sunGlow.setAttribute('opacity', (Math.max(0, 1 - Math.abs(alt - 1) / 8) * 0.7).toFixed(2));
+    }
+
+    // ===== حالة الوقت =====
+    function phaseName(t) {
+        if (t < day.fajr) return 'ليل';
+        if (t < day.nurStart) return 'الفجر';
+        if (t < day.nurEnd) return 'الإسفار';
+        if (t < day.sunrise) return 'قبل الشروق';
+        if (t < day.duha) return 'بعد الشروق';
+        if (t < day.sunset) return 'النهار';
+        if (t < day.duskStart) return 'الغروب';
+        if (t < day.duskEnd) return 'نهاية النور';
+        if (t < day.isha) return 'قبل العشاء';
+        return 'ليل';
+    }
+
+    // ===== الواجهة =====
+    const datePicker = document.getElementById('datePicker');
+    const scrub = document.getElementById('scrub');
+    let day = null, manual = false;
+
+    function updateSky() {
+        const t = Number(scrub.value);
+        setSky(t);
+        document.getElementById('scrubTime').innerText = fmt(t);
+        document.getElementById('phase').innerText = phaseName(t);
+    }
+
+    function drawTicks() {
+        const box = document.getElementById('ticks');
+        const items = [
+            [day.fajr, '#60a5fa'], [day.nurStart, '#fcd34d'], [day.sunrise, '#fb923c'],
+            [day.noon, '#fde047'], [day.sunset, '#fb923c'], [day.duskEnd, '#fcd34d'], [day.isha, '#60a5fa']
+        ];
+        box.innerHTML = items.map(([m, c]) =>
+            `<span style="position:absolute;left:${(m / 1439 * 100).toFixed(2)}%;top:2px;width:3px;height:8px;margin-left:-1.5px;border-radius:2px;background:${c}"></span>`
+        ).join('');
+    }
+
+    function goLive() {
+        const now = bahrainNow();
+        datePicker.value = now.date;
+        manual = false;
+        render();
+    }
+
+    function render() {
+        day = computeDay(datePicker.value);
+        document.getElementById('fajrTime').innerText = fmt(day.fajr);
+        document.getElementById('nurTime').innerText = fmtRange(day.nurStart, day.nurEnd);
+        document.getElementById('sunriseTime').innerText = fmt(day.sunrise);
+        document.getElementById('duhaTime').innerText = fmt(day.duha);
+        document.getElementById('sunsetTime').innerText = fmt(day.sunset);
+        document.getElementById('duskTime').innerText = fmtRange(day.duskStart, day.duskEnd);
+        document.getElementById('ishaTime').innerText = fmt(day.isha);
+        drawTicks();
+        if (!manual) {
+            const now = bahrainNow();
+            scrub.value = datePicker.value === now.date ? Math.round(now.min) % 1440 : Math.round(day.sunrise);
+        }
+        updateSky();
+        tick();
+    }
+
+    function tick() {
+        if (!day) return;
+        const now = bahrainNow();
+        const label = document.getElementById('nextLabel');
+        const cd = document.getElementById('countdown');
+
+        if (datePicker.value === now.date) {
+            const events = [
+                ['الفجر', day.fajr], ['الإسفار', day.nurStart],
+                ['الشروق', day.sunrise], ['الضحى', day.duha],
+                ['الغروب', day.sunset], ['نهاية النور', day.duskStart],
+                ['العشاء', day.isha]
+            ];
+            const next = events.find(e => e[1] > now.min);
+            if (next) {
+                const s = Math.round((next[1] - now.min) * 60);
+                label.innerText = `المتبقي على ${next[0]}`;
+                cd.innerText = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}`;
+            } else {
+                label.innerText = 'انتهت مواقيت اليوم';
+                cd.innerText = '--:--:--';
+            }
+            if (!manual) {
+                const v = Math.round(now.min) % 1440;
+                if (Number(scrub.value) !== v) { scrub.value = v; updateSky(); }
+            }
+        } else {
+            label.innerText = 'اضغط "الآن" لعرض العد التنازلي';
+            cd.innerText = '--:--:--';
+        }
+    }
+
+    scrub.addEventListener('input', () => { manual = true; updateSky(); });
+    document.getElementById('liveBtn').addEventListener('click', goLive);
+    document.querySelectorAll('[data-jump]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            manual = true;
+            scrub.value = clamp(Math.round(day[btn.dataset.jump]), 0, 1439);
+            updateSky();
+        });
+    });
+    document.getElementById('prevDay').addEventListener('click', () => {
+        datePicker.value = shiftDate(datePicker.value, -1); render();
+    });
+    document.getElementById('nextDay').addEventListener('click', () => {
+        datePicker.value = shiftDate(datePicker.value, 1); render();
+    });
+    datePicker.addEventListener('change', render);
+
+    datePicker.value = bahrainNow().date;
+    render();
+    setInterval(tick, 1000);
+</script>
+</body>
+</html>
